@@ -133,7 +133,7 @@ ivec2 TextureAtlas::calcTexLayout(const std::vector<size_t> indices,
     // Fill each line by putting each element after the previous one.
     // If an element does not fit, start new line.
     for (auto i : indices) {
-        const auto& extent = entries[i].texExtent + margin_;
+        const auto& extent = entries[i].texExtent + 2 * margin_;
         size_t line = 0;
         while (line < lineLengths.size()) {
             if (lineLengths[line] + extent.x < width) {

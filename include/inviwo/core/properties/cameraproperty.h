@@ -181,6 +181,7 @@ public:
     FloatRefProperty aspectRatio_;
     FloatRefProperty nearPlane_;
     FloatRefProperty farPlane_;
+    void fitData();
 
 private:
     bool changeCamera(const std::string& name);
@@ -189,7 +190,6 @@ private:
     std::vector<ButtonGroupProperty::Button> buttons();
     void updateFittingVisibility();
     void setView(::inviwo::camerautil::Side side);
-    void fitData();
     void flipUp();
     void setNearFar();
     void setLookRange();

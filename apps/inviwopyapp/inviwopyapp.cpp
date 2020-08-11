@@ -45,6 +45,7 @@
 #include <QObject>
 #include <QFile>
 #include <warn/pop>
+#include <iostream>
 
 namespace py = pybind11;
 
@@ -85,7 +86,17 @@ PYBIND11_MODULE(inviwopyapp, m) {
         .def("registerModules",
              [](InviwoApplicationQt* app) { app->registerModules(inviwo::getModuleList()); })
         .def("registerRuntimeModules",
-             [](InviwoApplicationQt* app) { app->registerModules(RuntimeModuleLoading{}); });
+             [](InviwoApplicationQt* app) { app->registerModules(RuntimeModuleLoading{}); })
+        .def("waitForNetwork", [](InviwoApplicationQt* app) {
+            app->processEvents();
+            app->waitForPool();
+
+            std::cout << "Background Jobs: " << app->getProcessorNetwork()->runningBackgroundJobs() << "\n";
+            while (app->getProcessorNetwork()->runningBackgroundJobs() > 0) {
+                app->processEvents();
+                app->processFront();
+            }
+        });
 
     m.add_object("py", inviwopy);
     m.doc() = "Python inviwo application";

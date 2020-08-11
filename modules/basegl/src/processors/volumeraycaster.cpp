@@ -131,6 +131,7 @@ void VolumeRaycaster::initializeResources() {
 }
 
 void VolumeRaycaster::process() {
+    LogInfo("volumeRaycaster::process()");
     if (volumePort_.isChanged()) {
         auto newVolume = volumePort_.getData();
 
@@ -143,6 +144,7 @@ void VolumeRaycaster::process() {
                 newVolume->getRep<kind::GL>();
                 glFinish();
                 dispatchFront([this, newVolume]() {
+                    LogInfo("volumeRaycaster dispatched volume!");
                     loadedVolume_ = newVolume;
                     notifyObserversFinishBackgroundWork(this, 1);
                     invalidate(InvalidationLevel::InvalidOutput);
@@ -172,6 +174,7 @@ void VolumeRaycaster::process() {
                         channel_, isotfComposite_);
 
     utilgl::singleDrawImagePlaneRect();
+    LogInfo("End of process()");
 
     shader_.deactivate();
     utilgl::deactivateCurrentTarget();

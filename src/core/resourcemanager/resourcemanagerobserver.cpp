@@ -27,6 +27,7 @@
  *
  *********************************************************************************/
 
+#include <string>
 #include <inviwo/core/resourcemanager/resourcemanagerobserver.h>
 
 namespace inviwo {

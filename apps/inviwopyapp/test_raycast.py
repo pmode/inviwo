@@ -27,7 +27,7 @@ if __name__ == '__main__':
     vr = app.network.VolumeRaycaster
     canvas = app.network.Canvas
 
-    vol = np.load('vol.npy').astype(np.float32) / 4095.0
+    vol = np.random.rand(200,200,200)).astype(np.float32)
 
     app.network.lock()
 

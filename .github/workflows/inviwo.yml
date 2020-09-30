@@ -75,6 +75,7 @@ jobs:
         scoop bucket add extras
         scoop install nsis doxygen latex
         echo "::add-path::~/scoop/shims"
+        mpm.exe --install=dvips
 
     - name: VCPKG Install
       shell: bash

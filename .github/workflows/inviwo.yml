@@ -69,7 +69,7 @@ jobs:
         brew install ninja doxygen
         brew cask install basictex
         eval "$(/usr/libexec/path_helper)"
-        echo "::add-path::$(which latex | dirname)"
+        echo "::add-path::$(dirname $(which latex))"
 
     - name: Install Scoop
       if: runner.os == 'Windows'
@@ -77,8 +77,6 @@ jobs:
         Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
         scoop bucket add extras
         scoop install nsis doxygen latex
-        ls ~/scoop/shims
-        ls (Split-Path -Path (Get-Command dvips).Path -Parent)
         echo "::add-path::~/scoop/shims"
         echo "::add-path::$(Split-Path -Path (Get-Command dvips).Path -Parent)"  
         
@@ -185,6 +183,7 @@ jobs:
     #    path: build/inviwo-v*.zip
 
     - name: Doxygen
+      if: runner.os != 'Linux' # generate processor previews fails to load qt plugins
       working-directory: build
       shell: bash
       run: cmake --build . --config ${{ env.BUILD_TYPE }} --parallel --target DOXY-ALL 

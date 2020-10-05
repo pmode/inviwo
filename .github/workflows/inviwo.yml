@@ -7,7 +7,7 @@ env:
   IVW_VCPKG_SHA: '2a6442cb934de2f99c8ac5bbd8a9dcf5538aee98'   # vcpkg "version" to use
   #IVW_VCPKG_SHA: '399458a9d9a763c0e06cc979464a17074fe8517d'  # nuget verbose version, git remote add inviwo https://github.com/inviwo/vcpkg.git
   VCPKG_BINARY_SOURCES: 'clear;nuget,GitHub,readwrite'        # recognized by vcpkg
-  QT_DEBUG_PLUGINS: 1                                         # print qt plugin debug info
+  # QT_DEBUG_PLUGINS: 1                                         # print qt plugin debug info
 
 jobs:
   build:
@@ -59,7 +59,9 @@ jobs:
     - name: Apt Install
       shell: bash
       if: runner.os == 'Linux'
-      run: sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev libglew-dev ninja-build doxygen texlive
+      run: |
+        sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev libglew-dev ninja-build doxygen texlive
+        echo "::add-path::$(which latex | dirname)"
       
     - name: Brew Install
       shell: bash
@@ -67,6 +69,7 @@ jobs:
       run: |
         brew install ninja doxygen
         brew cask install basictex
+        echo "::add-path::$(which latex | dirname)"
 
     - name: Install Scoop
       if: runner.os == 'Windows'
@@ -74,7 +77,10 @@ jobs:
         Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
         scoop bucket add extras
         scoop install nsis doxygen latex
+        ls ~/scoop/shims
+        ls (Split-Path -Path (Get-Command dvips).Path -Parent)
         echo "::add-path::~/scoop/shims"
+        echo "::add-path::$(Split-Path -Path (Get-Command dvips).Path -Parent)"  
         
     - name: VCPKG Install
       shell: bash

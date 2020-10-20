@@ -272,6 +272,12 @@ public:
                                                  static_cast<Key*>(keyframe));
     }
 
+protected:
+    /*
+     * Creates a Seq::key_type using the current property value. 
+     */
+    virtual std::unique_ptr<Key> createKeyframe(Seconds time) override;
+
 private:
     Prop* property_;  ///< non-owning reference
 };
@@ -288,6 +294,11 @@ bool operator!=(const PropertyTrack<Prop, Key>& a, const PropertyTrack<Prop, Key
 template <typename Prop, typename Key>
 Track* PropertyTrack<Prop, Key>::toTrack() {
     return this;
+}
+
+template <typename Prop, typename Key>
+inline std::unique_ptr<Key> PropertyTrack<Prop, Key>::createKeyframe(Seconds time) {
+    return std::make_unique<Key>(time, property_->get());
 }
 
 template <typename Prop, typename Key>

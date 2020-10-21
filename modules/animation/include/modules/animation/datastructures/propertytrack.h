@@ -33,6 +33,7 @@
 #include <modules/animation/animationmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 
+#include <inviwo/core/properties/cameraproperty.h>
 #include <inviwo/core/properties/property.h>
 #include <inviwo/core/properties/templateproperty.h>
 #include <inviwo/core/properties/ordinalproperty.h>
@@ -42,6 +43,7 @@
 #include <modules/animation/datastructures/valuekeyframe.h>
 #include <modules/animation/datastructures/basetrack.h>
 #include <modules/animation/datastructures/animationtime.h>
+#include <modules/animation/datastructures/camerakeyframe.h>
 #include <modules/animation/datastructures/keyframesequence.h>
 #include <modules/animation/datastructures/valuekeyframesequence.h>
 #include <modules/animation/interpolation/linearinterpolation.h>
@@ -124,6 +126,17 @@ void updateKeyframeFromPropertyHelper(TemplateOptionProperty<T>* property,
                                       ValueKeyframe<T>* keyframe) {
     keyframe->setValue(property->getSelectedValue());
 }
+
+/**
+ * Helper function for inviwo::animation::PropertyTrack::setOtherProperty
+ * @see inviwo::animation::BasePropertyTrack::setOtherProperty
+ */
+void setOtherPropertyHelper(CameraProperty* property, CameraKeyframe* keyframe);
+/**
+ * Helper function for inviwo::animation::PropertyTrack::updateKeyframeFromProperty
+ * @see inviwo::animation::BasePropertyTrack::updateKeyframeFromProperty
+ */
+void updateKeyframeFromPropertyHelper(CameraProperty* property, CameraKeyframe* keyframe);
 
 }  // namespace detail
 
@@ -377,7 +390,9 @@ AnimationTimeState PropertyTrack<Prop, Key>::operator()(Seconds from, Seconds to
         auto& seq1 = *std::prev(it);
 
         if (to < seq1.getLastTime()) {  // case 2a
-            property_->set(seq1(from, to));
+            Prop::value_type v;
+            seq1(from, to, v);
+            property_->set(v);
         } else {  // case 2b
             if (from < seq1.getLastTime()) {
                 // We came from before the previous key
@@ -463,6 +478,20 @@ void PropertyTrack<Prop, Key>::deserialize(Deserializer& d) {
     BaseTrack<KeyframeSequenceTyped<Key>>::deserialize(d);
     d.deserializeAs<Property>("property", property_);
 }
+
+// Template specialization (CameraProperty)
+template <> // need to export due to static?
+IVW_MODULE_ANIMATION_API std::string PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
+
+template <>
+AnimationTimeState PropertyTrack<CameraProperty, CameraKeyframe>::operator()(
+    Seconds from, Seconds to, AnimationState state) const;
+
+//template <>
+//Keyframe* PropertyTrack<CameraProperty, CameraKeyframe>::addKeyFrameUsingPropertyValue(
+//    const Property* property, Seconds time, std::unique_ptr<Interpolation> interpolation);
+
+template class IVW_MODULE_ANIMATION_TMPL_EXP PropertyTrack<CameraProperty, CameraKeyframe>;
 
 }  // namespace animation
 

@@ -480,15 +480,16 @@ void PropertyTrack<Prop, Key>::deserialize(Deserializer& d) {
 }
 
 // Template specialization (CameraProperty)
-template <> // need to export due to static?
-IVW_MODULE_ANIMATION_API std::string PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
+template <>  // need to export due to static?
+IVW_MODULE_ANIMATION_API std::string
+PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
 
 template <>
 AnimationTimeState PropertyTrack<CameraProperty, CameraKeyframe>::operator()(
     Seconds from, Seconds to, AnimationState state) const;
 
-//template <>
-//Keyframe* PropertyTrack<CameraProperty, CameraKeyframe>::addKeyFrameUsingPropertyValue(
+// template <>
+// Keyframe* PropertyTrack<CameraProperty, CameraKeyframe>::addKeyFrameUsingPropertyValue(
 //    const Property* property, Seconds time, std::unique_ptr<Interpolation> interpolation);
 
 template class IVW_MODULE_ANIMATION_TMPL_EXP PropertyTrack<CameraProperty, CameraKeyframe>;

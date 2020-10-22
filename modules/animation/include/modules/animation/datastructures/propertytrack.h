@@ -479,8 +479,8 @@ void PropertyTrack<Prop, Key>::deserialize(Deserializer& d) {
     d.deserializeAs<Property>("property", property_);
 }
 
-// Template specialization (CameraProperty) 
-template <>  
+// Template specialization (CameraProperty)
+template <>
 IVW_MODULE_ANIMATION_API std::string
 PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
 

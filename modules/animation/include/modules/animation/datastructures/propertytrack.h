@@ -426,7 +426,7 @@ Keyframe* PropertyTrack<Prop, Key>::addKeyFrameUsingPropertyValue(
             keys.push_back(std::make_unique<Key>(time, prop->get()));
             auto sequence = std::make_unique<KeyframeSequenceTyped<Key>>(
                 std::move(keys), std::unique_ptr<InterpolationTyped<Key>>(ip));
-            if (auto se = add(std::move(sequence))) {
+            if (auto se = this->add(std::move(sequence))) {
                 return &se->getFirst();
             }
         } else {
@@ -479,20 +479,15 @@ void PropertyTrack<Prop, Key>::deserialize(Deserializer& d) {
     d.deserializeAs<Property>("property", property_);
 }
 
-// Template specialization (CameraProperty)
-template <>  // need to export due to static?
+// Template specialization (CameraProperty) 
+template <>  
 IVW_MODULE_ANIMATION_API std::string
 PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
 
 template <>
-AnimationTimeState PropertyTrack<CameraProperty, CameraKeyframe>::operator()(
-    Seconds from, Seconds to, AnimationState state) const;
-
-// template <>
-// Keyframe* PropertyTrack<CameraProperty, CameraKeyframe>::addKeyFrameUsingPropertyValue(
-//    const Property* property, Seconds time, std::unique_ptr<Interpolation> interpolation);
-
-template class IVW_MODULE_ANIMATION_TMPL_EXP PropertyTrack<CameraProperty, CameraKeyframe>;
+IVW_MODULE_ANIMATION_API AnimationTimeState
+PropertyTrack<CameraProperty, CameraKeyframe>::operator()(Seconds from, Seconds to,
+                                                          AnimationState state) const;
 
 }  // namespace animation
 

@@ -59,7 +59,8 @@ namespace detail {
  * @see inviwo::animation::BasePropertyTrack::setPropertyFromKeyframe
  */
 template <typename T>
-void setPropertyFromKeyframeHelper(TemplateProperty<T>* property, const ValueKeyframe<T>* keyframe) {
+void setPropertyFromKeyframeHelper(TemplateProperty<T>* property,
+                                   const ValueKeyframe<T>* keyframe) {
     property->set(keyframe->getValue());
 }
 
@@ -77,7 +78,8 @@ void setPropertyFromKeyframeHelper(OrdinalProperty<T>* property, const ValueKeyf
  * @see inviwo::animation::BasePropertyTrack::setPropertyFromKeyframe
  */
 template <typename T>
-void setPropertyFromKeyframeHelper(OrdinalRefProperty<T>* property, const ValueKeyframe<T>* keyframe) {
+void setPropertyFromKeyframeHelper(OrdinalRefProperty<T>* property,
+                                   const ValueKeyframe<T>* keyframe) {
     property->set(keyframe->getValue());
 }
 
@@ -86,7 +88,8 @@ void setPropertyFromKeyframeHelper(OrdinalRefProperty<T>* property, const ValueK
  * @see inviwo::animation::BasePropertyTrack::setPropertyFromKeyframe
  */
 template <typename T>
-void setPropertyFromKeyframeHelper(TemplateOptionProperty<T>* property, const ValueKeyframe<T>* keyframe) {
+void setPropertyFromKeyframeHelper(TemplateOptionProperty<T>* property,
+                                   const ValueKeyframe<T>* keyframe) {
     property->setSelectedValue(keyframe->getValue());
 }
 
@@ -95,7 +98,8 @@ void setPropertyFromKeyframeHelper(TemplateOptionProperty<T>* property, const Va
  * @see inviwo::animation::BasePropertyTrack::setKeyframeFromProperty
  */
 template <typename T>
-void setKeyframeFromPropertyHelper(const TemplateProperty<T>* property, ValueKeyframe<T>* keyframe) {
+void setKeyframeFromPropertyHelper(const TemplateProperty<T>* property,
+                                   ValueKeyframe<T>* keyframe) {
     keyframe->setValue(property->get());
 }
 
@@ -113,7 +117,8 @@ void setKeyframeFromPropertyHelper(const OrdinalProperty<T>* property, ValueKeyf
  * @see inviwo::animation::BasePropertyTrack::setKeyframeFromProperty
  */
 template <typename T>
-void setKeyframeFromPropertyHelper(const OrdinalRefProperty<T>* property, ValueKeyframe<T>* keyframe) {
+void setKeyframeFromPropertyHelper(const OrdinalRefProperty<T>* property,
+                                   ValueKeyframe<T>* keyframe) {
     keyframe->setValue(property->get());
 }
 
@@ -123,7 +128,7 @@ void setKeyframeFromPropertyHelper(const OrdinalRefProperty<T>* property, ValueK
  */
 template <typename T>
 void setKeyframeFromPropertyHelper(const TemplateOptionProperty<T>* property,
-                                      ValueKeyframe<T>* keyframe) {
+                                   ValueKeyframe<T>* keyframe) {
     keyframe->setValue(property->getSelectedValue());
 }
 
@@ -200,7 +205,7 @@ public:
         Seconds time, std::unique_ptr<Interpolation> interpolation) = 0;
     virtual Track* toTrack() = 0;
 
-    virtual void setPropertyFromKeyframe(Property* dst, const Keyframe* src) const = 0;            
+    virtual void setPropertyFromKeyframe(Property* dst, const Keyframe* src) const = 0;
     virtual void setKeyframeFromProperty(const Property* src, Keyframe* dst) = 0;
 };
 
@@ -264,7 +269,7 @@ public:
         IVW_ASSERT(dstProperty->getClassIdentifier() == PropertyTraits<Prop>::classIdentifier(),
                    "Incorrect Property type");
         detail::setPropertyFromKeyframeHelper(static_cast<Prop*>(dstProperty),
-                                       static_cast<const Key*>(keyframe));
+                                              static_cast<const Key*>(keyframe));
     }
 
     /**
@@ -281,17 +286,18 @@ public:
         ivwAssert(srcProperty->getClassIdentifier() == PropertyTraits<Prop>::classIdentifier(),
                   "Incorrect Property type");
         detail::setKeyframeFromPropertyHelper(static_cast<const Prop*>(srcProperty),
-                                                 static_cast<Key*>(keyframe));
+                                              static_cast<Key*>(keyframe));
     }
 
 protected:
     /*
      * Helper function for when we know that we are between keyframes within a KeyframeSequence.
      * Called from operator()(Seconds from, Seconds to, AnimationState state) const
-     * Provide template specialization of this method if you want custom property/sequence behaviour.
+     * Provide template specialization of this method if you want custom property/sequence
+     * behaviour.
      */
-    AnimationTimeState animateSequence(const seq_type& seq, Seconds from,
-                                       Seconds to, AnimationState state) const;
+    AnimationTimeState animateSequence(const seq_type& seq, Seconds from, Seconds to,
+                                       AnimationState state) const;
     /*
      * Creates a Seq::key_type using the current property value.
      */
@@ -316,8 +322,9 @@ Track* PropertyTrack<Prop, Key>::toTrack() {
 }
 
 template <typename Prop, typename Key>
-AnimationTimeState PropertyTrack<Prop, Key>::animateSequence(
-    const seq_type& seq, Seconds from, Seconds to, AnimationState state) const {
+AnimationTimeState PropertyTrack<Prop, Key>::animateSequence(const seq_type& seq, Seconds from,
+                                                             Seconds to,
+                                                             AnimationState state) const {
     typename Prop::value_type v;
     seq(from, to, v);
     property_->set(v);
@@ -498,9 +505,10 @@ IVW_MODULE_ANIMATION_API std::string
 PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
 
 template <>
-IVW_MODULE_ANIMATION_API 
-AnimationTimeState PropertyTrack<CameraProperty, CameraKeyframe>::animateSequence(
-    const KeyframeSequenceTyped<CameraKeyframe>& seq, Seconds from, Seconds to, AnimationState state) const;
+IVW_MODULE_ANIMATION_API AnimationTimeState
+PropertyTrack<CameraProperty, CameraKeyframe>::animateSequence(
+    const KeyframeSequenceTyped<CameraKeyframe>& seq, Seconds from, Seconds to,
+    AnimationState state) const;
 
 }  // namespace animation
 

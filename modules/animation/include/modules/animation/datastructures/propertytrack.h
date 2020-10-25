@@ -33,6 +33,7 @@
 #include <modules/animation/animationmoduledefine.h>
 #include <inviwo/core/common/inviwo.h>
 
+#include <inviwo/core/properties/buttonproperty.h>
 #include <inviwo/core/properties/cameraproperty.h>
 #include <inviwo/core/properties/property.h>
 #include <inviwo/core/properties/templateproperty.h>
@@ -42,6 +43,7 @@
 
 #include <modules/animation/datastructures/valuekeyframe.h>
 #include <modules/animation/datastructures/basetrack.h>
+#include <modules/animation/datastructures/buttonkeyframesequence.h>
 #include <modules/animation/datastructures/animationtime.h>
 #include <modules/animation/datastructures/camerakeyframe.h>
 #include <modules/animation/datastructures/keyframesequence.h>
@@ -143,6 +145,17 @@ void setPropertyFromKeyframeHelper(CameraProperty* property, const CameraKeyfram
  */
 void setKeyframeFromPropertyHelper(const CameraProperty* property, CameraKeyframe* keyframe);
 
+/**
+ * Helper function for inviwo::animation::PropertyTrack::setPropertyFromKeyframe
+ * @see inviwo::animation::BasePropertyTrack::setPropertyFromKeyframe
+ */
+void setPropertyFromKeyframeHelper(ButtonProperty* property, const ButtonKeyframe* keyframe);
+/**
+ * Helper function for inviwo::animation::PropertyTrack::setKeyframeFromProperty
+ * @see inviwo::animation::BasePropertyTrack::setKeyframeFromProperty
+ */
+void setKeyframeFromPropertyHelper(const ButtonProperty* property, ButtonKeyframe* keyframe);
+
 }  // namespace detail
 
 /** \class BasePropertyTrack
@@ -211,20 +224,18 @@ public:
 
 /** \class PropertyTrack
  * Implementation of BasePropertyTrack and TrackTyped based on templates parameter types for
- * Property and KeyFrame.
+ * Property, KeyFrame and KeyframeSequence.
  * Exposes functions for adding a KeyFrame and KeyFrameSequence
  * using the current values of the Property.
  * @see Track
- * @see PropertyTrack
+ * @see KeyframeSequenceTyped
  * @see Property
  */
-template <typename Prop, typename Key>
-class PropertyTrack : public BaseTrack<KeyframeSequenceTyped<Key>>, public BasePropertyTrack {
+template <typename Prop, typename Key, typename Seq = KeyframeSequenceTyped<Key>>
+class PropertyTrack : public BaseTrack<Seq>, public BasePropertyTrack {
 public:
-    static_assert(std::is_same<typename std::decay<decltype(std::declval<Prop>().get())>::type,
-                               typename Key::value_type>::value,
-                  "The value type of Prop has to match that of Key");
-    using seq_type = typename BaseTrack<KeyframeSequenceTyped<Key>>::seq_type;
+    static_assert(std::is_same<Key, typename Seq::key_type>::value,
+                  "The KeyframeSequence must match Keyframe 'Key'");
     PropertyTrack();
     PropertyTrack(Prop* property);
     /**
@@ -296,61 +307,94 @@ protected:
      * Provide template specialization of this method if you want custom property/sequence
      * behaviour.
      */
-    AnimationTimeState animateSequence(const seq_type& seq, Seconds from, Seconds to,
+    AnimationTimeState animateSequence(const Seq& seq, Seconds from, Seconds to,
                                        AnimationState state) const;
     /*
-     * Creates a Seq::key_type using the current property value.
+     * Create a Key using the current property value.
      */
     virtual std::unique_ptr<Key> createKeyframe(Seconds time) override;
+
+    /*
+     * Create a Key using the provided property value.
+     */
+    std::unique_ptr<Key> createKeyframe(const Prop* property, Seconds time);
+    /*
+     * Create a KeyframeSequence using the provided keys and interpolation.
+     */
+    std::unique_ptr<Seq> createKeyframeSequence(std::vector<std::unique_ptr<Key>> keys,
+                                                std::unique_ptr<Interpolation> interpolation);
 
 private:
     Prop* property_;  ///< non-owning reference
 };
 
-template <typename Prop, typename Key>
-bool operator==(const PropertyTrack<Prop, Key>& a, const PropertyTrack<Prop, Key>& b) {
+template <typename Prop, typename Key, typename Seq>
+bool operator==(const PropertyTrack<Prop, Key, Seq>& a, const PropertyTrack<Prop, Key, Seq>& b) {
     return std::equal(a.begin(), a.end(), a.begin(), b.end());
 }
-template <typename Prop, typename Key>
-bool operator!=(const PropertyTrack<Prop, Key>& a, const PropertyTrack<Prop, Key>& b) {
+template <typename Prop, typename Key, typename Seq>
+bool operator!=(const PropertyTrack<Prop, Key, Seq>& a, const PropertyTrack<Prop, Key, Seq>& b) {
     return !(a == b);
 }
 
-template <typename Prop, typename Key>
-Track* PropertyTrack<Prop, Key>::toTrack() {
+template <typename Prop, typename Key, typename Seq>
+Track* PropertyTrack<Prop, Key, Seq>::toTrack() {
     return this;
 }
 
-template <typename Prop, typename Key>
-AnimationTimeState PropertyTrack<Prop, Key>::animateSequence(const seq_type& seq, Seconds from,
-                                                             Seconds to,
-                                                             AnimationState state) const {
+template <typename Prop, typename Key, typename Seq>
+AnimationTimeState PropertyTrack<Prop, Key, Seq>::animateSequence(const Seq& seq, Seconds from,
+                                                                  Seconds to,
+                                                                  AnimationState state) const {
     typename Prop::value_type v;
     seq(from, to, v);
     property_->set(v);
     return {to, state};
 }
 
-template <typename Prop, typename Key>
-inline std::unique_ptr<Key> PropertyTrack<Prop, Key>::createKeyframe(Seconds time) {
-    return std::make_unique<Key>(time, property_->get());
+template <typename Prop, typename Key, typename Seq>
+inline std::unique_ptr<Key> PropertyTrack<Prop, Key, Seq>::createKeyframe(Seconds time) {
+    return createKeyframe(property_, time);
 }
 
-template <typename Prop, typename Key>
-PropertyTrack<Prop, Key>::PropertyTrack()
-    : BaseTrack<KeyframeSequenceTyped<Key>>{"", "", 100}, property_(nullptr) {}
+template <typename Prop, typename Key, typename Seq>
+inline std::unique_ptr<Key> PropertyTrack<Prop, Key, Seq>::createKeyframe(const Prop* property,
+                                                                          Seconds time) {
+    return std::make_unique<Key>(time, property->get());
+}
 
-template <typename Prop, typename Key>
-PropertyTrack<Prop, Key>::PropertyTrack(Prop* property)
-    : BaseTrack<KeyframeSequenceTyped<Key>>{property->getIdentifier(), property->getDisplayName(),
-                                            100}
+template <typename Prop, typename Key, typename Seq>
+
+inline std::unique_ptr<Seq> PropertyTrack<Prop, Key, Seq>::createKeyframeSequence(
+    std::vector<std::unique_ptr<Key>> keys, std::unique_ptr<Interpolation> interpolation) {
+    if constexpr (std::is_same<Seq, KeyframeSequenceTyped<Key>>::value) {
+        if (auto ip = dynamic_cast<InterpolationTyped<Key>*>(interpolation.get())) {
+            interpolation.release();
+            return std::make_unique<Seq>(std::move(keys),
+                                         std::unique_ptr<InterpolationTyped<Key>>(ip));
+        } else {
+            throw Exception("Invalid interpolation " + interpolation->getClassIdentifier() +
+                                " for " + getClassIdentifier(),
+                            IVW_CONTEXT);
+        }
+    } else {
+        return std::make_unique<Seq>(std::move(keys));
+    }
+}
+
+template <typename Prop, typename Key, typename Seq>
+PropertyTrack<Prop, Key, Seq>::PropertyTrack() : BaseTrack<Seq>{"", "", 100}, property_(nullptr) {}
+
+template <typename Prop, typename Key, typename Seq>
+PropertyTrack<Prop, Key, Seq>::PropertyTrack(Prop* property)
+    : BaseTrack<Seq>{property->getIdentifier(), property->getDisplayName(), 100}
     , property_(property) {}
 
-template <typename Prop, typename Key>
-PropertyTrack<Prop, Key>::~PropertyTrack() = default;
+template <typename Prop, typename Key, typename Seq>
+PropertyTrack<Prop, Key, Seq>::~PropertyTrack() = default;
 
-template <typename Prop, typename Key>
-std::string PropertyTrack<Prop, Key>::classIdentifier() {
+template <typename Prop, typename Key, typename Seq>
+std::string PropertyTrack<Prop, Key, Seq>::classIdentifier() {
     // Use property class identifier since multiple properties
     // may have the same key (data type)
     std::string id =
@@ -358,28 +402,28 @@ std::string PropertyTrack<Prop, Key>::classIdentifier() {
     return id;
 }
 
-template <typename Prop, typename Key>
-const std::string& PropertyTrack<Prop, Key>::getIdentifier() const {
-    return BaseTrack<KeyframeSequenceTyped<Key>>::getIdentifier();
+template <typename Prop, typename Key, typename Seq>
+const std::string& PropertyTrack<Prop, Key, Seq>::getIdentifier() const {
+    return BaseTrack<Seq>::getIdentifier();
 }
 
-template <typename Prop, typename Key>
-std::string PropertyTrack<Prop, Key>::getClassIdentifier() const {
+template <typename Prop, typename Key, typename Seq>
+std::string PropertyTrack<Prop, Key, Seq>::getClassIdentifier() const {
     return classIdentifier();
 }
 
-template <typename Prop, typename Key>
-Prop* PropertyTrack<Prop, Key>::getProperty() {
+template <typename Prop, typename Key, typename Seq>
+Prop* PropertyTrack<Prop, Key, Seq>::getProperty() {
     return property_;
 }
 
-template <typename Prop, typename Key>
-const Prop* PropertyTrack<Prop, Key>::getProperty() const {
+template <typename Prop, typename Key, typename Seq>
+const Prop* PropertyTrack<Prop, Key, Seq>::getProperty() const {
     return property_;
 }
 
-template <typename Prop, typename Key>
-void PropertyTrack<Prop, Key>::setProperty(Property* property) {
+template <typename Prop, typename Key, typename Seq>
+void PropertyTrack<Prop, Key, Seq>::setProperty(Property* property) {
     if (auto prop = dynamic_cast<Prop*>(property)) {
         property_ = prop;
         this->setIdentifier(property_->getIdentifier());
@@ -395,9 +439,9 @@ void PropertyTrack<Prop, Key>::setProperty(Property* property) {
  * |- case 1-|-case 2----------------|-case 2----------|-case 2------|
  *           |-case 2a---|-case 2b---|
  */
-template <typename Prop, typename Key>
-AnimationTimeState PropertyTrack<Prop, Key>::operator()(Seconds from, Seconds to,
-                                                        AnimationState state) const {
+template <typename Prop, typename Key, typename Seq>
+AnimationTimeState PropertyTrack<Prop, Key, Seq>::operator()(Seconds from, Seconds to,
+                                                             AnimationState state) const {
     if (!this->isEnabled() || this->empty()) return {to, state};
 
     // 'it' will be the first seq. with a first time larger then 'to'.
@@ -427,8 +471,8 @@ AnimationTimeState PropertyTrack<Prop, Key>::operator()(Seconds from, Seconds to
     return {to, state};
 }
 
-template <typename Prop, typename Key>
-Keyframe* PropertyTrack<Prop, Key>::addKeyFrameUsingPropertyValue(
+template <typename Prop, typename Key, typename Seq>
+Keyframe* PropertyTrack<Prop, Key, Seq>::addKeyFrameUsingPropertyValue(
     const Property* property, Seconds time, std::unique_ptr<Interpolation> interpolation) {
     auto prop = dynamic_cast<const Prop*>(property);
     if (!prop) {
@@ -439,77 +483,75 @@ Keyframe* PropertyTrack<Prop, Key>::addKeyFrameUsingPropertyValue(
     }
     if (this->empty()) {
         // Use provided interpolation if we can
-        if (auto ip = dynamic_cast<InterpolationTyped<Key>*>(interpolation.get())) {
-            interpolation.release();
-
-            std::vector<std::unique_ptr<Key>> keys;
-            keys.push_back(std::make_unique<Key>(time, prop->get()));
-            auto sequence = std::make_unique<KeyframeSequenceTyped<Key>>(
-                std::move(keys), std::unique_ptr<InterpolationTyped<Key>>(ip));
-            if (auto se = this->add(std::move(sequence))) {
-                return &se->getFirst();
-            }
-        } else {
-            throw Exception("Invalid interpolation " + interpolation->getClassIdentifier() +
-                                " for " + getClassIdentifier(),
-                            IVW_CONTEXT);
+        std::vector<std::unique_ptr<Key>> keys;
+        keys.push_back(createKeyframe(prop, time));
+        auto sequence = createKeyframeSequence(std::move(keys), std::move(interpolation));
+        if (auto se = this->add(std::move(sequence))) {
+            return &se->getFirst();
         }
-
     } else {
-        return this->addToClosestSequence(std::make_unique<Key>(time, prop->get()));
+        return this->addToClosestSequence(createKeyframe(prop, time));
     }
     return nullptr;
 }
 
-template <typename Prop, typename Key>
-Keyframe* PropertyTrack<Prop, Key>::addKeyFrameUsingPropertyValue(
+template <typename Prop, typename Key, typename Seq>
+Keyframe* PropertyTrack<Prop, Key, Seq>::addKeyFrameUsingPropertyValue(
     Seconds time, std::unique_ptr<Interpolation> interpolation) {
     return addKeyFrameUsingPropertyValue(property_, time, std::move(interpolation));
 }
 
-template <typename Prop, typename Key>
-KeyframeSequence* PropertyTrack<Prop, Key>::addSequenceUsingPropertyValue(
+template <typename Prop, typename Key, typename Seq>
+KeyframeSequence* PropertyTrack<Prop, Key, Seq>::addSequenceUsingPropertyValue(
     Seconds time, std::unique_ptr<Interpolation> interpolation) {
-    if (auto ip = dynamic_cast<InterpolationTyped<Key>*>(interpolation.get())) {
-        interpolation.release();
-
-        std::vector<std::unique_ptr<Key>> keys;
-        keys.push_back(std::make_unique<Key>(time, property_->get()));
-        auto sequence = std::make_unique<KeyframeSequenceTyped<Key>>(
-            std::move(keys), std::unique_ptr<InterpolationTyped<Key>>(ip));
-        return this->add(std::move(sequence));
-
-    } else {
-        throw Exception("Invalid interpolation " + interpolation->getClassIdentifier() + " for " +
-                            getClassIdentifier(),
-                        IVW_CONTEXT);
-    }
-    return nullptr;
+    std::vector<std::unique_ptr<Key>> keys;
+    keys.push_back(createKeyframe(property_, time));
+    auto sequence = createKeyframeSequence(std::move(keys), std::move(interpolation));
+    return this->add(std::move(sequence));
 }
 
-template <typename Prop, typename Key>
-void PropertyTrack<Prop, Key>::serialize(Serializer& s) const {
-    BaseTrack<KeyframeSequenceTyped<Key>>::serialize(s);
+template <typename Prop, typename Key, typename Seq>
+void PropertyTrack<Prop, Key, Seq>::serialize(Serializer& s) const {
+    BaseTrack<Seq>::serialize(s);
     s.serialize("property", property_);
 }
 
-template <typename Prop, typename Key>
-void PropertyTrack<Prop, Key>::deserialize(Deserializer& d) {
-    BaseTrack<KeyframeSequenceTyped<Key>>::deserialize(d);
+template <typename Prop, typename Key, typename Seq>
+void PropertyTrack<Prop, Key, Seq>::deserialize(Deserializer& d) {
+    BaseTrack<Seq>::deserialize(d);
     d.deserializeAs<Property>("property", property_);
 }
 
 // Template specialization (CameraProperty)
 template <>
-IVW_MODULE_ANIMATION_API std::string
-PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier();
+inline std::string PropertyTrack<CameraProperty, CameraKeyframe>::classIdentifier() {
+    // Use property class identifier since multiple properties
+    // may have the same key (data type)
+    std::string id = "org.inviwo.animation.PropertyTrack.for." + CameraProperty::classIdentifier;
+    return id;
+}
 
 template <>
-IVW_MODULE_ANIMATION_API AnimationTimeState
-PropertyTrack<CameraProperty, CameraKeyframe>::animateSequence(
+inline AnimationTimeState PropertyTrack<CameraProperty, CameraKeyframe>::animateSequence(
     const KeyframeSequenceTyped<CameraKeyframe>& seq, Seconds from, Seconds to,
-    AnimationState state) const;
+    AnimationState state) const {
+    seq(from, to, property_->get());
+    return {to, state};
+}
 
+template <>
+inline AnimationTimeState
+PropertyTrack<ButtonProperty, ButtonKeyframe, ButtonKeyframeSequence>::animateSequence(
+    const ButtonKeyframeSequence& seq, Seconds from, Seconds to, AnimationState state) const {
+    return seq(from, to, state);
+}
+
+template <>
+inline std::unique_ptr<ButtonKeyframe>
+PropertyTrack<ButtonProperty, ButtonKeyframe, ButtonKeyframeSequence>::createKeyframe(
+    const ButtonProperty* property, Seconds time) {
+    return std::make_unique<ButtonKeyframe>(time, const_cast<ButtonProperty*>(property));
+}
 }  // namespace animation
 
 }  // namespace inviwo

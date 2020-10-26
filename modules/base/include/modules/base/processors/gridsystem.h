@@ -73,7 +73,7 @@ public:
         , state_{"state",
                  "State",
                  {{"single", "Single", State::Single}, {"list", "List", State::List}},
-                 initState == State::Single ? 0 : 1}
+                 initState == State::Single ? size_t{0} : size_t{1}}
         , single_{"single", displayName, defaultArgs...}
         , list_{detail::copyInitFilledArray<N, Prop>(single_)}
 

@@ -68,7 +68,7 @@ public:
 
     template <typename... DefaultArgs>
     ListOrSingleValueProperty(const std::string& identifier, const std::string& displayName,
-                              State initState = State::Single, DefaultArgs... defaultArgs)
+                              State initState, DefaultArgs... defaultArgs)
         : CompositeProperty(identifier, displayName)
         , state_{"state",
                  "State",
